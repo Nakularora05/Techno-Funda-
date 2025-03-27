@@ -8,9 +8,9 @@ google-generativeai
 alpha_vantage       
 Pillow
 chromadb
-llama_index
 numpy
 pandas
 yfinance
 ollama 
 mistral
+llama-index
