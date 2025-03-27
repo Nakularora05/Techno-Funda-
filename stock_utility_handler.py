@@ -112,12 +112,24 @@ class StockAnalyzer:
         plt.savefig(image_path)
         plt.close()
     
-    def analyze_ratios_with_llm(self, ratios):
-        llm = Ollama(model="mistral")
-        prompt = f"""Given these financial ratios:
-        {ratios}, provide an investment recommendation."""
-        response = llm.complete(prompt)
-        return response.text
+  def analyze_ratios_with_llm(self, ratios):
+    openai.api_key = os.getenv("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")  # Load API Key from Environment Variable
+
+    prompt = f"""Given these financial ratios:
+    {ratios}, provide an investment recommendation."""
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a financial expert providing stock investment insights."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"Error generating response: {str(e)}"
+
 
 if __name__ == "__main__":
     api_key = "1UJ6ACYM0P4MHORZ"
