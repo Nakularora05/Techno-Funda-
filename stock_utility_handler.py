@@ -120,7 +120,7 @@ class StockAnalyzer:
         return response.text
 
 if __name__ == "__main__":
-    api_key = "YOUR_ALPHAVANTAGE_API_KEY"
+    api_key = "1UJ6ACYM0P4MHORZ"
     stock_api = StockAPI(api_key)
     stock_analyzer = StockAnalyzer()
     
