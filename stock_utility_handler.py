@@ -1,5 +1,5 @@
-import requests
 import pandas as pd
+import requests
 import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,10 +7,13 @@ import openai
 import os
 
 class StockAPI:
+    """Fetches stock data and fundamental analysis."""
+    
     def __init__(self, api_key):
         self.api_key = api_key
-    
+
     def get_stock_info(self, symbol):
+        """Fetch stock data from AlphaVantage API."""
         params = {
             "function": "TIME_SERIES_DAILY_ADJUSTED",
             "symbol": symbol,
@@ -21,6 +24,7 @@ class StockAPI:
         return response.json()
     
     def get_fundamental_data(self, symbol):
+        """Fetch fundamental data from Yahoo Finance."""
         stock = yf.Ticker(symbol)
         fundamentals = {
             "Net Income": stock.info.get("netIncome", "N/A"),
@@ -32,6 +36,7 @@ class StockAPI:
         return fundamentals
     
     def get_financial_ratios(self, symbol):
+        """Extracts key financial ratios from Yahoo Finance."""
         stock = yf.Ticker(symbol)
         financials = stock.financials
         balance_sheet = stock.balance_sheet
@@ -66,7 +71,10 @@ class StockAPI:
         return ratios
 
 class StockAnalyzer:
+    """Processes stock data and generates charts."""
+    
     def json_to_dataframe(self, data):
+        """Converts JSON stock data into a DataFrame."""
         time_series = data.get("Time Series (Daily)", {})
         df = pd.DataFrame.from_dict(time_series, orient="index")
         df = df.rename(columns={
@@ -83,6 +91,7 @@ class StockAnalyzer:
         return df
     
     def plot_stock_data(self, df, stock, image_path):
+        """Plots stock price data along with moving averages."""
         plt.figure(figsize=(14, 8))
         df['MA_7'] = df['Close'].rolling(window=7).mean()
         df['MA_20'] = df['Close'].rolling(window=20).mean()
@@ -95,15 +104,6 @@ class StockAnalyzer:
         plt.plot(df.index, df['MA_100'], label='100-Day MA', color='green')
         plt.plot(df.index, df['MA_200'], label='200-Day MA', color='purple')
         
-        max_price = df['Close'].max()
-        min_price = df['Close'].min()
-        diff = max_price - min_price
-        levels = [max_price, max_price - 0.236 * diff, max_price - 0.382 * diff,
-                  max_price - 0.5 * diff, max_price - 0.618 * diff, min_price]
-        
-        for level in levels:
-            plt.axhline(y=level, linestyle='--', alpha=0.5, color='gray')
-        
         plt.xlabel("Date")
         plt.ylabel("Price")
         plt.title(f"Stock Price of {stock}")
@@ -112,24 +112,24 @@ class StockAnalyzer:
         plt.savefig(image_path)
         plt.close()
     
-  def analyze_ratios_with_llm(self, ratios):
-    openai.api_key = os.getenv("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")  # Load API Key from Environment Variable
-
-    prompt = f"""Given these financial ratios:
-    {ratios}, provide an investment recommendation."""
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a financial expert providing stock investment insights."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"Error generating response: {str(e)}"
-
+    def analyze_ratios_with_llm(self, ratios):
+        """Generates investment insights using OpenAI GPT-4."""
+        openai.api_key = os.getenv("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")
+        
+        prompt = f"""Given these financial ratios:
+        {ratios}, provide an investment recommendation."""
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a financial expert providing stock investment insights."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"Error generating response: {str(e)}"
 
 if __name__ == "__main__":
     api_key = "1UJ6ACYM0P4MHORZ"
