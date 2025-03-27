@@ -10,7 +10,7 @@ Pillow
 chromadb
 numpy
 pandas
-yfinance
+yahoo_fin
 ollama 
 mistral
 llama-index
