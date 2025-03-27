@@ -16,3 +16,4 @@ mistral
 llama-index
 openai
 si
+stock_info
