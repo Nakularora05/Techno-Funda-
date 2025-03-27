@@ -3,8 +3,8 @@ import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
-from llama_index.core import Settings
-from llama_index.llms.ollama import Ollama
+import openai
+import os
 
 class StockAPI:
     def __init__(self, api_key):
