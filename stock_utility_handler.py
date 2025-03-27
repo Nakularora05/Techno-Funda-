@@ -1,106 +1,112 @@
+import requests
 import pandas as pd
-import json
-from datetime import datetime
-import pytz
+import yfinance as yf
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.widgets as widgets
-import requests
-
+import numpy as np
 
 class StockAPI:
-    def __init__(self,api_key):
+    def __init__(self, api_key):
         self.api_key = api_key
-        
-    def get_stock_info(self,stock,market):
-        if market == 'NASDAQ':
-            url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={stock}&outputsize=compact&apikey={self.api_key}'
-        else:
-            url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={stock}.{market}&outputsize=compact&apikey={self.api_key}'
-        r = requests.get(url)
-        data = r.json()
-        return data 
     
+    def get_stock_info(self, symbol, market):
+        params = {
+            "function": "TIME_SERIES_DAILY_ADJUSTED",
+            "symbol": symbol,
+            "apikey": self.api_key,
+            "outputsize": "compact"
+        }
+        response = requests.get("https://www.alphavantage.co/query", params=params)
+        return response.json()
+    
+    def get_fundamental_data(self, symbol):
+        stock = yf.Ticker(symbol)
+        fundamentals = {
+            "Net Income": stock.info.get("netIncome", "N/A"),
+            "ROE": stock.info.get("returnOnEquity", "N/A"),
+            "ROA": stock.info.get("returnOnAssets", "N/A"),
+            "Debt to Equity": stock.info.get("debtToEquity", "N/A"),
+            "Dividend Yield": stock.info.get("dividendYield", "N/A")
+        }
+        return fundamentals
+
 class StockAnalyzer:
-    def __init__(self):
-        pass
-
-    def json_to_dataframe(self,json_data,stock_symbol,market):
-        print(json_data)
-        time_series_data = json_data['Time Series (Daily)']
-        df_data = []
-
-        for date_str, values in time_series_data.items():
-            data_row = {'date': date_str}
-            for key, value in values.items():
-                new_key = key.split('. ')[1]  # Correctly extract the key
-                data_row[new_key] = float(value)
-            df_data.append(data_row)
-
-        df = pd.DataFrame(df_data)
-        df['date'] = pd.to_datetime(df['date'])
-
-        eastern = pytz.timezone('US/Eastern')
-        ist = pytz.timezone('Asia/Kolkata')
-
-        df['date'] = df['date'].dt.tz_localize(eastern).dt.tz_convert(ist)
-        df['date'] = df['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        df['stock']=stock_symbol
-        df['market']=market
-
-        df = df.set_index('date')
+    def json_to_dataframe(self, data, stock, market):
+        time_series = data.get("Time Series (Daily)", {})
+        df = pd.DataFrame.from_dict(time_series, orient="index")
+        df = df.rename(columns={
+            "1. open": "Open",
+            "2. high": "High",
+            "3. low": "Low",
+            "4. close": "Close",
+            "5. adjusted close": "Adj Close",
+            "6. volume": "Volume"
+        })
+        df.index = pd.to_datetime(df.index)
+        df = df.astype(float)
+        df.sort_index(inplace=True)
         return df
-
-    def plot_stock_data(self,df, stock_symbol, market,image_path):
-        plt.figure(figsize=(16, 10))
-
-        # Plotting Closing Price
-        plt.subplot(3, 1, 1)
-        plt.plot(pd.to_datetime(df.index), df['close'], label=f'{stock_symbol} Closing Price ({market})', color='blue')
-        plt.title(f'{stock_symbol} Stock Performance ({market})')
-        plt.xlabel('Date (IST)')
-        plt.ylabel('Price')
+    
+    def plot_stock_data(self, df, stock, market, image_path):
+        plt.figure(figsize=(14, 8))
+        
+        # Moving Averages
+        df['MA_7'] = df['Close'].rolling(window=7).mean()
+        df['MA_20'] = df['Close'].rolling(window=20).mean()
+        df['MA_100'] = df['Close'].rolling(window=100).mean()
+        df['MA_200'] = df['Close'].rolling(window=200).mean()
+        
+        plt.plot(df.index, df['Close'], label=f'{stock} Closing Price', color='blue', alpha=0.7)
+        plt.plot(df.index, df['MA_7'], label='7-Day MA', color='orange')
+        plt.plot(df.index, df['MA_20'], label='20-Day MA', color='red')
+        plt.plot(df.index, df['MA_100'], label='100-Day MA', color='green')
+        plt.plot(df.index, df['MA_200'], label='200-Day MA', color='purple')
+        
+        # Fibonacci Retracement
+        max_price = df['Close'].max()
+        min_price = df['Close'].min()
+        diff = max_price - min_price
+        levels = [max_price, max_price - 0.236 * diff, max_price - 0.382 * diff,
+                  max_price - 0.5 * diff, max_price - 0.618 * diff, min_price]
+        
+        for level in levels:
+            plt.axhline(y=level, linestyle='--', alpha=0.5, color='gray')
+        
+        plt.xlabel("Date")
+        plt.ylabel("Price")
+        plt.title(f"Stock Price of {stock} ({market})")
         plt.legend()
-        plt.grid(True)
-
-        # Plotting Volume
-        plt.subplot(3, 1, 2)
-        plt.bar(pd.to_datetime(df.index), df['volume'], label=f'{stock_symbol} Volume ({market})', color='green', width=2)
-        plt.xlabel('Date (IST)')
-        plt.ylabel('Volume')
-        plt.legend()
-        plt.grid(True)
-
-        # Plotting Moving Averages
-        plt.subplot(3, 1, 3)
-        df['MA_7'] = df['close'].rolling(window=7).mean()
-        df['MA_20'] = df['close'].rolling(window=20).mean()
-        plt.plot(pd.to_datetime(df.index), df['close'], label=f'{stock_symbol} Closing Price ({market})', color='blue', alpha=0.7)
-        plt.plot(pd.to_datetime(df.index), df['MA_7'], label='7-Day MA', color='orange')
-        plt.plot(pd.to_datetime(df.index), df['MA_20'], label='20-Day MA', color='red')
-        plt.xlabel('Date Month(IST)')
-        plt.ylabel('Price')
-        plt.legend()
-        plt.grid(True)
-
-        # Enhanced Date Formatting for All Subplots
-        for ax in plt.gcf().axes:
-            # Major ticks every month, minor ticks every week
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_minor_locator(mdates.WeekdayLocator(byweekday=[0]))  # Monday
-
-            # Formatter for major ticks
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-
-            # Formatter for minor ticks (hover tooltip will provide more detail)
-            #ax.xaxis.set_minor_formatter(mdates.DateFormatter('%Y-%m-%d'))
-
-            # Auto-rotate labels if needed
-            plt.gcf().autofmt_xdate()
-
-        # Add hover tooltip
-        cursor = widgets.Cursor(plt.gca(), color='red', linewidth=1)
-
-        plt.tight_layout()
-        plt.savefig(image_path) 
+        plt.grid()
+        plt.savefig(image_path)
+        plt.close()
+    
+    def plot_fundamentals(self, fundamentals, stock):
+        metrics = list(fundamentals.keys())
+        values = list(fundamentals.values())
+        
+        plt.figure(figsize=(12, 6))
+        plt.bar(metrics, values, color=['blue', 'orange', 'green', 'red', 'purple'])
+        plt.xlabel("Fundamental Metrics")
+        plt.ylabel("Values")
+        plt.title(f"Fundamental Analysis for {stock}")
+        plt.xticks(rotation=45)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.show()
+
+# Usage Example
+if __name__ == "__main__":
+    api_key = "YOUR_ALPHAVANTAGE_API_KEY"
+    stock_api = StockAPI(api_key)
+    stock_analyzer = StockAnalyzer()
+    
+    symbol = "AAPL"
+    market = "NASDAQ"
+    
+    # Fetch stock data
+    stock_data = stock_api.get_stock_info(symbol, market)
+    df = stock_analyzer.json_to_dataframe(stock_data, symbol, market)
+    stock_analyzer.plot_stock_data(df, symbol, market, "stock_chart.png")
+    
+    # Fetch fundamental data
+    fundamentals = stock_api.get_fundamental_data(symbol)
+    stock_analyzer.plot_fundamentals(fundamentals, symbol)
