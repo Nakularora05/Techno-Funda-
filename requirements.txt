@@ -12,3 +12,5 @@ llama_index
 numpy
 pandas
 yfinance
+ollama 
+mistral
