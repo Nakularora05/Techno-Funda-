@@ -1,6 +1,14 @@
 import streamlit as st
 import os
 import tempfile
+
+# Safe Import for llama-index
+try:
+    from llama_index.llms.ollama import Ollama
+except ModuleNotFoundError:
+    st.error("❌ Missing dependency: llama_index.llms.ollama. Run 'pip install llama-index'.")
+    raise
+
 from stock_utility_handler import StockAPI, StockAnalyzer
 from ai_insights_handler import AIInsights
 
@@ -49,8 +57,7 @@ def page2():
             try:
                 stock_api_obj = StockAPI("1UJ6ACYM0P4MHORZ")
                 stock_analyzer_obj = StockAnalyzer()
-                ai_insights_obj = AIInsights("AIzaSyAVi1v80vt41mTjZED6BaMs5-74HKFkSk0")
-
+                ai_insights_obj = AIInsights("your-gemini-api-key")
                 
                 market_data = stock_api_obj.get_stock_info(stock, market)
                 df = stock_analyzer_obj.json_to_dataframe(market_data, stock, market)
@@ -68,7 +75,7 @@ def page2():
                     st.write(fundamentals)
                 
                 response = ai_insights_obj.get_ai_insights(image_path, stock, market)
-                st.session_state.ai_insights = "".join([part.text for candidate in response.candidates for part in candidate.content.parts])
+                st.session_state.ai_insights = response if isinstance(response, str) else "Unable to generate insights."
                 
                 st.session_state.internal_results_available = True
             except Exception as e:
