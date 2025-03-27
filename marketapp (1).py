@@ -1,9 +1,6 @@
 import streamlit as st
 import os
 import tempfile
-
-
-
 from stock_utility_handler import StockAPI, StockAnalyzer
 from ai_insights_handler import AIInsights
 
