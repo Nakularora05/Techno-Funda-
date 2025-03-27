@@ -2,12 +2,7 @@ import streamlit as st
 import os
 import tempfile
 
-# Safe Import for llama-index
-try:
-    from llama_index.llms.ollama import Ollama
-except ModuleNotFoundError:
-    st.error("❌ Missing dependency: llama_index.llms.ollama. Run 'pip install llama-index'.")
-    raise
+
 
 from stock_utility_handler import StockAPI, StockAnalyzer
 from ai_insights_handler import AIInsights
