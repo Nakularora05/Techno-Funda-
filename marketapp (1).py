@@ -47,9 +47,10 @@ def page2():
             st.session_state.image_path = image_path
             
             try:
-                stock_api_obj = StockAPI("YOUR_ALPHAVANTAGE_API_KEY")
+                stock_api_obj = StockAPI("1UJ6ACYM0P4MHORZ")
                 stock_analyzer_obj = StockAnalyzer()
-                ai_insights_obj = AIInsights("YOUR_GEMINI_API_KEY")
+                ai_insights_obj = AIInsights("AIzaSyAVi1v80vt41mTjZED6BaMs5-74HKFkSk0")
+
                 
                 market_data = stock_api_obj.get_stock_info(stock, market)
                 df = stock_analyzer_obj.json_to_dataframe(market_data, stock, market)
