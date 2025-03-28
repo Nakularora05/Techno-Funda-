@@ -17,3 +17,4 @@ llama-index
 openai
 si
 stock_info
+yfinance
