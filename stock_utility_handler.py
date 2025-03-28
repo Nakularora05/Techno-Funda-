@@ -10,7 +10,7 @@ class StockAnalyzer:
     def __init__(self):
         pass
 
-    def json_to_dataframe(self, json_data, stock):
+    def json_to_dataframe(self, json_data):
         """Converts stock market JSON data to a Pandas DataFrame."""
         if "Time Series (Daily)" not in json_data:
             raise ValueError("Invalid JSON data format")
