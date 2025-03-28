@@ -5,6 +5,23 @@ import numpy as np
 import openai
 import os
 
+
+class StockAnalyzer:
+    def __init__(self):
+        pass
+
+    def json_to_dataframe(self, json_data, stock):
+        """Converts stock market JSON data to a Pandas DataFrame."""
+        if "Time Series (Daily)" not in json_data:
+            raise ValueError("Invalid JSON data format")
+        
+        data = json_data["Time Series (Daily)"]
+        df = pd.DataFrame.from_dict(data, orient="index")
+        df = df.astype(float)
+        df.index = pd.to_datetime(df.index)
+        df.sort_index(inplace=True)
+        return df
+
 class StockAPI:
     """Fetches stock data and fundamental analysis."""
     
