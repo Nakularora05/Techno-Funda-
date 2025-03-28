@@ -76,7 +76,7 @@ def analysis_page():
 
                 if analysis_type in ["Technical Analysis", "Both"]:
                     market_data = stock_api_obj.get_stock_info(stock)
-                    df = stock_analyzer_obj.json_to_dataframe(market_data, stock)
+                    df = stock_analyzer_obj.json_to_dataframe(market_data)  # Fixed this line
                     stock_analyzer_obj.plot_stock_data(df, stock, image_path)
                     
                     response = ai_insights_obj.get_ai_insights(image_path, stock)
