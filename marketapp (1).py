@@ -18,7 +18,13 @@ if "page" not in st.session_state:
 # Set page configuration
 st.set_page_config(page_title="📊 Stock Insight AI", page_icon="📈", layout="wide")
 
-def page1():
+def main():
+    if st.session_state.page == "page1":
+        input_page()
+    elif st.session_state.page == "page2":
+        analysis_page()
+
+def input_page():
     """Input Page"""
     st.title("Stock Insight AI - Analysis")
     
@@ -50,7 +56,7 @@ def page1():
         st.session_state.internal_results_available = False
         st.rerun()
 
-def page2():
+def analysis_page():
     """Analysis Page"""
     st.title(f"{st.session_state.analysis_type} for {st.session_state.ticker} ({st.session_state.market})")
     
@@ -107,8 +113,5 @@ def page2():
             st.session_state.internal_results_available = False
             st.rerun()
 
-# Route between pages
-if st.session_state.page == "page1":
-    page1()
-elif st.session_state.page == "page2":
-    page2()
+if __name__ == "__main__":
+    main()
