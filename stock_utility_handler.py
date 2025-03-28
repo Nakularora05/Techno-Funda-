@@ -1,6 +1,5 @@
 import pandas as pd
 import requests
-import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
 import openai
