@@ -131,7 +131,7 @@ class StockAnalyzer:
             return f"Error generating response: {str(e)}"
 
 if __name__ == "__main__":
-    api_key = "1UJ6ACYM0P4MHORZ"
+    api_key = "JXVWA9W91RARPC46"
     stock_api = StockAPI(api_key)
     stock_analyzer = StockAnalyzer()
     
