@@ -1,9 +1,9 @@
-from stock_utility_handler import StockAPI, StockAnalyzer
-from ai_insights_handler import AIInsights
 import streamlit as st
 import os
 import tempfile
-import yahoo_fin.stock_info as si  # Added Yahoo Finance for fundamental analysis
+from stock_utility_handler import StockAPI, StockAnalyzer
+from ai_insights_handler import AIInsights
+import yfinance as yf
 
 # Initialize session state variables
 if "page" not in st.session_state:
@@ -15,37 +15,33 @@ if "page" not in st.session_state:
     st.session_state.ai_insights = ""
     st.session_state.internal_results_available = False
 
-# Set page configuration for better UI
-st.set_page_config(page_title="📊 Stock Insight AI - Technical & Fundamental Analysis", 
-                   page_icon="📈", layout="wide")
+# Set page configuration
+st.set_page_config(page_title="📊 Stock Insight AI", page_icon="📈", layout="wide")
 
 def page1():
     """Input Page"""
-    st.title("Stock Insight AI - Technical & Fundamental Analysis")
+    st.title("Stock Insight AI - Analysis")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.session_state.ticker = st.text_input("Enter Stock Ticker Symbol", value=st.session_state.ticker)
     with col2:
-        st.session_state.market = st.selectbox("Select Market", ["BSE", "NASDAQ"], 
-                                               index=["BSE", "NASDAQ"].index(st.session_state.market))
-
-    # Dropdown for selecting analysis type
-    st.session_state.analysis_type = st.selectbox("Select Analysis Type", 
-                                                  ["Technical Analysis", "Fundamental Analysis", "Both"])
-
+        st.session_state.market = st.selectbox("Select Market", ["BSE", "NASDAQ"], index=["BSE", "NASDAQ"].index(st.session_state.market))
+    with col3:
+        st.session_state.analysis_type = st.selectbox("Select Analysis Type", ["Technical Analysis", "Fundamental Analysis", "Both"])
+    
     st.sidebar.header("About")
     st.sidebar.write("""
-        **Stock Insight AI** is an AI-powered stock analysis tool that:
+        **Stock Insight AI**
         - Fetches real-time stock data.
         - Performs trend and pattern analysis.
         - Provides AI-generated insights.
-        - Retrieves fundamental data from Yahoo Finance.
+        - Retrieves fundamental financial data.
 
-        **Steps to use:**
+        **How to Use:**
         1. Enter the stock ticker symbol (e.g., RELIANCE).
         2. Select the market (BSE or NASDAQ).
-        3. Choose the analysis type (Technical, Fundamental, or Both).
+        3. Choose analysis type (Technical/Fundamental/Both).
         4. Click "Submit" to analyze.
     """)
 
@@ -56,81 +52,56 @@ def page1():
 
 def page2():
     """Analysis Page"""
-    st.title(f"Analysis for {st.session_state.ticker} ({st.session_state.market})")
-
+    st.title(f"{st.session_state.analysis_type} for {st.session_state.ticker} ({st.session_state.market})")
+    
     stock = st.session_state.ticker
-    market = st.session_state.market
     analysis_type = st.session_state.analysis_type
-
+    
     if not st.session_state.internal_results_available:
         with st.spinner("🔍 Analyzing... Please wait..."):
             temp_dir = tempfile.gettempdir()
-            image_path = os.path.join(temp_dir, f"{market}_{stock}.png")
+            image_path = os.path.join(temp_dir, f"{stock}.png")
             st.session_state.image_path = image_path
 
             try:
-                stock_api_obj = StockAPI("1UJ6ACYM0P4MHORZ")  # Stock API
-                stock_analyzer_obj = StockAnalyzer()  # Stock Analyzer
-                ai_insights_obj = AIInsights("AIzaSyAVi1v80vt41mTjZED6BaMs5-74HKFkSk0")  # AI Insights
+                stock_api_obj = StockAPI("1UJ6ACYM0P4MHORZ")
+                stock_analyzer_obj = StockAnalyzer()
+                ai_insights_obj = AIInsights("AIzaSyAVi1v80vt41mTjZED6BaMs5-74HKFkSk0")
 
-                # Fetching stock data
-                market_data = stock_api_obj.get_stock_info(stock)  # FIXED: Removed the extra argument
-
-                if "Time Series (Daily)" not in market_data:
-                    st.error("⚠️ Unable to fetch stock data. API limit might be reached.")
-                    return
-
-                # Convert JSON data to DataFrame
-                df = stock_analyzer_obj.json_to_dataframe(market_data, stock, market)
-
-                # Generate stock chart
                 if analysis_type in ["Technical Analysis", "Both"]:
-                    stock_analyzer_obj.plot_stock_data(df, stock, market, image_path)
-
-                # AI Insights Handling
-                try:
-                    if analysis_type in ["Technical Analysis", "Both"]:
-                        response = ai_insights_obj.get_ai_insights(image_path, stock, market)
-                        st.session_state.ai_insights = "\n".join(
-                            [part.text for candidate in response.candidates for part in candidate.content.parts]
-                        )
-                    else:
-                        st.session_state.ai_insights = "AI Insights not required for Fundamental Analysis."
-                except Exception as ai_error:
-                    st.warning(f"⚠️ AI Insights could not be fetched: {ai_error}")
-                    st.session_state.ai_insights = "AI Insights unavailable."
-
-                # Fundamental Analysis
+                    market_data = stock_api_obj.get_stock_info(stock)
+                    df = stock_analyzer_obj.json_to_dataframe(market_data, stock)
+                    stock_analyzer_obj.plot_stock_data(df, stock, image_path)
+                    
+                    response = ai_insights_obj.get_ai_insights(image_path, stock)
+                    st.session_state.ai_insights = "\n".join([part.text for candidate in response.candidates for part in candidate.content.parts])
+                
                 if analysis_type in ["Fundamental Analysis", "Both"]:
-                    try:
-                        fundamentals = si.get_quote_table(stock)
-                        st.session_state.fundamentals = fundamentals
-                    except Exception as fund_error:
-                        st.warning(f"⚠️ Unable to fetch fundamental data: {fund_error}")
-                        st.session_state.fundamentals = None
+                    stock_info = yf.Ticker(stock).info
+                    st.session_state.fundamentals = {
+                        "Market Cap": stock_info.get("marketCap", "N/A"),
+                        "P/E Ratio": stock_info.get("trailingPE", "N/A"),
+                        "52-Week High": stock_info.get("fiftyTwoWeekHigh", "N/A"),
+                        "52-Week Low": stock_info.get("fiftyTwoWeekLow", "N/A"),
+                    }
 
                 st.session_state.internal_results_available = True
-
             except Exception as e:
                 st.error(f"❌ An error occurred: {e}")
                 return
 
-    # Display results
     if st.session_state.internal_results_available:
         if analysis_type in ["Technical Analysis", "Both"]:
-            st.subheader("📊 Technical Chart Analysis")
+            st.subheader("📊 Chart Analysis")
             st.image(st.session_state.image_path, caption=f"{stock} Chart", use_column_width=True)
+            st.subheader("🧠 AI Insights")
+            st.write(st.session_state.ai_insights)
         
-        st.subheader("🧠 AI Insights")
-        st.write(st.session_state.ai_insights)
-
         if analysis_type in ["Fundamental Analysis", "Both"]:
-            st.subheader("📈 Fundamental Analysis (Yahoo Finance)")
-            if st.session_state.fundamentals:
-                st.write(st.session_state.fundamentals)
-            else:
-                st.write("⚠️ Fundamental data unavailable.")
-
+            st.subheader("📈 Fundamental Analysis")
+            for key, value in st.session_state.fundamentals.items():
+                st.write(f"**{key}:** {value}")
+        
         if st.button("🔙 Back"):
             st.session_state.page = "page1"
             st.session_state.internal_results_available = False
