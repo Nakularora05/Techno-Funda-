@@ -114,7 +114,7 @@ class StockAnalyzer:
     
     def analyze_ratios_with_llm(self, ratios):
         """Generates investment insights using OpenAI GPT-4."""
-        openai.api_key = os.getenv("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")
+        openai.api_key = os.getenv("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")
         
         prompt = f"""Given these financial ratios:
         {ratios}, provide an investment recommendation."""
