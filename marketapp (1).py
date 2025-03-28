@@ -64,7 +64,7 @@ def page2():
             st.session_state.image_path = image_path
 
             try:
-                stock_api_obj = StockAPI("1UJ6ACYM0P4MHORZ")
+                stock_api_obj = StockAPI("JXVWA9W91RARPC46")
                 stock_analyzer_obj = StockAnalyzer()
                 ai_insights_obj = AIInsights("AIzaSyAVi1v80vt41mTjZED6BaMs5-74HKFkSk0")
 
